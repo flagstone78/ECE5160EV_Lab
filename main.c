@@ -1,7 +1,6 @@
 #include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
 #include <stdbool.h>
 
-
 // Configure the period for each timer
 #define EPWM_TIMER_TBPRD  900 // Period register
 #define EPWM_CMP          225
