@@ -7,7 +7,7 @@
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.C:\Users\Public\Lab2\targetConfigs\TMS320F28069.ccxml.Texas Instruments XDS100v2 USB Debug Probe/C28xx" value="Lab2"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.TMS320F28069.ccxml.Texas Instruments XDS100v2 USB Debug Probe/C28xx" value="Lab2"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_TARGET_CONFIG" value="${target_config_active_default:Lab2}"/>
-<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.C:\Users\Public\Lab2\targetConfigs\TMS320F28069.ccxml.Texas Instruments XDS100v2 USB Debug Probe/C28xx" value="C:/Users\Public\Lab2\Debug\Lab2.out"/>
+<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.C:\Users\Public\Lab2\targetConfigs\TMS320F28069.ccxml.Texas Instruments XDS100v2 USB Debug Probe/C28xx" value="C:/Users\Public\Lab2\Release\Lab2.out"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.TMS320F28069.ccxml.Texas Instruments XDS100v2 USB Debug Probe/C28xx" value="C:/Users\Alan\workspace_v9\Lab2\Debug\Lab2.out"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/Lab2"/>

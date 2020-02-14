@@ -1,73 +1,30 @@
+#include "Globals.h"
 #include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
 #include <stdbool.h>
+#include "ADC_ISR.h"
+#include "controller.h"
 
 // Configure the period for each timer
 #define EPWM_TIMER_TBPRD  900 // Period register
 #define EPWM_CMP          225
 
 
-#define MinThrottleVoltage 0.88  //V
-#define MaxThrottleVoltage 4.2   //V
-#define ADCVoltageDividerRatio 0.772
-#define MAXADC  (MaxThrottleVoltage*ADCVoltageDividerRatio*4095)/3.3
-#define MINADC  (MinThrottleVoltage*ADCVoltageDividerRatio*4095)/3.3
-
-
-#define MAX_ADC_CURRENT 3000 //15 A   //2500 //10A        //2110 //5A    //
-
-
 // Prototype statements for functions found within this file.
-#pragma CODE_SECTION(epwm1_isr, "ramfuncs");
+//#pragma CODE_SECTION(epwm1_isr, "ramfuncs");
 interrupt void epwm1_isr(void);
 
-#pragma CODE_SECTION(HallA_isr, "ramfuncs");
-#pragma CODE_SECTION(HallB_isr, "ramfuncs");
-#pragma CODE_SECTION(HallC_isr, "ramfuncs");
+//#pragma CODE_SECTION(HallA_isr, "ramfuncs");
+//#pragma CODE_SECTION(HallB_isr, "ramfuncs");
+//#pragma CODE_SECTION(HallC_isr, "ramfuncs");
 interrupt void HallA_isr(void);
 interrupt void HallB_isr(void);
 interrupt void HallC_isr(void);
 
-#pragma CODE_SECTION(adc_isr, "ramfuncs");
-interrupt void adc_isr(void);
 
 //global vars for inputs
-volatile unsigned int power=0;     //pwm power values 0 to 900
-volatile unsigned int current;
 volatile unsigned int previous3pos=0;
 Uint32 delay = 0; //for blinking led
 
-void configureADC(){
-    InitAdc(); //power up, enable adc with clk/2
-    AdcOffsetSelfCal(); //must be called after enable global interrupt
-    InitAdcAio();
-
-    //AdcChanSelect(7);
-
-    // ADC Configuration for Temp Sensor
-    EALLOW;
-    AdcRegs.ADCCTL2.bit.ADCNONOVERLAP = 1;  //Enable non-overlap mode
-    AdcRegs.ADCCTL1.bit.INTPULSEPOS = 1;    //ADCINT1 trips after AdcResults latch
-    AdcRegs.INTSEL1N2.bit.INT1E     = 1;    //Enabled ADCINT1
-    AdcRegs.INTSEL1N2.bit.INT1CONT  = 0;    //Disable ADCINT1 Continuous mode
-    AdcRegs.INTSEL1N2.bit.INT1SEL   = 0;    //setup EOC0 to trigger ADCINT1 to fire
-
-    //simultaneous conversion SIMULENx = 1
-    AdcRegs.ADCSAMPLEMODE.bit.SIMULEN0 = 1;
-
-    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINA7 for throttle
-    AdcRegs.ADCSOC0CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
-    AdcRegs.ADCSOC0CTL.bit.ACQPS    = 25;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
-
-    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINA5 (which is internally connected to the temperature sensor)
-    AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
-    AdcRegs.ADCSOC1CTL.bit.ACQPS    = 25;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
-
-    EDIS;
-
-    //start adc
-    //AdcRegs.ADCSOCFRC1.bit.SOC7 = 1;
-
-}
 
 void configureGPIO(){
     EALLOW;
@@ -247,7 +204,7 @@ void main(void)
 // Step 1. Initialize System Control:
    InitSysCtrl();  // PLL, WatchDog, enable Peripheral Clocks
 
-   memcpy(&RamfuncsRunStart, &RamfuncsLoadStart, (Uint32)&RamfuncsLoadSize); //for delay in adc init
+   //memcpy(&RamfuncsRunStart, &RamfuncsLoadStart, (Uint32)&RamfuncsLoadSize); //for delay in adc init
 
 // Step 2. Initalize GPIO:
    configureADC(); //ADCINT 1 ISR handler must be not enabled or not set to default
@@ -404,7 +361,7 @@ interrupt void epwm1_isr(void)
 
     //calculate next pwm cmp vals
     Uint16 max_pwm=EPWM_TIMER_TBPRD;
-    Uint16 p = power;
+    Uint16 p = max_pwm*controller(1,0,PeakCurrent);//power;
     if(p > max_pwm){
         p = max_pwm;
     }
@@ -475,23 +432,6 @@ interrupt void epwm1_isr(void)
 
    // Acknowledge this interrupt to receive more interrupts from group 3
    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
-}
-
-interrupt void  adc_isr(void)
-{
-   //result on channel 0 (adcresult0)
-  power = 0.5*EPWM_TIMER_TBPRD*(AdcResult.ADCRESULT0-MINADC)/(MAXADC-MINADC);
-  current = AdcResult.ADCRESULT1;
-
-  Uint16 maxC = MAX_ADC_CURRENT;
-  if (current>=maxC){
-      GpioDataRegs.GPACLEAR.bit.GPIO13 = 1;  //Disable gate driver
-  }
-
-  AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;     //Clear ADCINT1 flag reinitialize for next SOC
-  PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;   // Acknowledge interrupt to PIE
-
-  return;
 }
 
 
