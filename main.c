@@ -13,7 +13,7 @@
 #define MINADC  (MinThrottleVoltage*ADCVoltageDividerRatio*4095)/3.3
 
 
-#define MAX_ADC_CURRENT 2500 //10A        //2110 //5A    //3000 //15 A
+#define MAX_ADC_CURRENT 3000 //15 A   //2500 //10A        //2110 //5A    //
 
 
 // Prototype statements for functions found within this file.
@@ -54,7 +54,7 @@ void configureADC(){
     //simultaneous conversion SIMULENx = 1
     AdcRegs.ADCSAMPLEMODE.bit.SIMULEN0 = 1;
 
-    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINA5 (which is internally connected to the temperature sensor)
+    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINA7 for throttle
     AdcRegs.ADCSOC0CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
     AdcRegs.ADCSOC0CTL.bit.ACQPS    = 25;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
 
