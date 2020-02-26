@@ -38,6 +38,7 @@ main.obj: C:/ti/controlSUITE/device_support/f2806x/v151/F2806x_common/include/F2
 main.obj: C:/ti/ccsv8/tools/compiler/ti-cgt-c2000_19.6.0.STS/include/stdbool.h
 main.obj: ../ADC_ISR.h
 main.obj: ../controller.h
+main.obj: ../speed.h
 
 ../main.c: 
 ../Globals.h: 
@@ -77,3 +78,4 @@ C:/ti/controlSUITE/device_support/f2806x/v151/F2806x_common/include/F2806x_Defau
 C:/ti/ccsv8/tools/compiler/ti-cgt-c2000_19.6.0.STS/include/stdbool.h: 
 ../ADC_ISR.h: 
 ../controller.h: 
+../speed.h: 

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "ADC_ISR.h"
 #include "controller.h"
+#include "speed.h"
 
 // Configure the period for each timer
 #define EPWM_TIMER_TBPRD  900 // Period register
@@ -204,6 +205,10 @@ void main(void)
 // Step 1. Initialize System Control:
    InitSysCtrl();  // PLL, WatchDog, enable Peripheral Clocks
 
+   setGlobals();
+
+   speedTimerSetUp();
+
    //memcpy(&RamfuncsRunStart, &RamfuncsLoadStart, (Uint32)&RamfuncsLoadSize); //for delay in adc init
 
 // Step 2. Initalize GPIO:
@@ -323,19 +328,19 @@ void main(void)
 
 interrupt void HallA_isr(void){
     //TODO speed stuff
-
+    updateSpeed();
     //clear interrupt
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
 
 interrupt void HallB_isr(void){
-
+    updateSpeed();
     //clear interrupt
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
 
 interrupt void HallC_isr(void){
-
+    updateSpeed();
     //clear interrupt
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP12;
 }
@@ -347,28 +352,23 @@ interrupt void epwm1_isr(void)
     bool hb = GpioDataRegs.GPADAT.bit.GPIO7;
     bool hc = GpioDataRegs.GPADAT.bit.GPIO8;
 
-    //three position switch
-    unsigned int current3pos = (GpioDataRegs.GPADAT.bit.GPIO9<<1) | (GpioDataRegs.GPADAT.bit.GPIO10);
-    if(current3pos == 2 ){ //change to high position
-        if(previous3pos != 2){
-            GpioDataRegs.GPASET.bit.GPIO13 = 1; //enable inverter
-        }
-    } else {
-        GpioDataRegs.GPACLEAR.bit.GPIO13 = 1; //disable inverter
-    }
-    previous3pos = current3pos;
-
-
     //calculate next pwm cmp vals
+
+    //lowpass for filtered speed; 0.0150341144 m/hall transition
+    filteredSpeed = 0.999*filteredSpeed + 0.001*(50000.0*(double)HallCount*0.0150341144);
+    HallCount=0;
+
     Uint16 max_pwm=EPWM_TIMER_TBPRD;
-    Uint16 p = max_pwm*controller(1,0,PeakCurrent);//power;
+    double dFromController = controller(ThrottleSetPoint,filteredSpeed,PeakCurrent);//power;
+    ptest = (double)max_pwm*dFromController;
+    Uint16 p = ptest;
     if(p > max_pwm){
         p = max_pwm;
     }
 
     //Uint16 p_inv = max_pwm - p;
     Uint16 state=(ha<<2)|(hb<<1)|(hc);
-
+    //if(PeakCurrent > i_0){state = 0;} //freewheel
     switch(state){
     case 1: //Test verified
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
@@ -426,6 +426,19 @@ interrupt void epwm1_isr(void)
          EPwm3Regs.CMPA.half.CMPA    = 0;//CH
          EPwm3Regs.CMPB              = max_pwm; //CL
     }
+
+    //three position switch
+    unsigned int current3pos = (GpioDataRegs.GPADAT.bit.GPIO9<<1) | (GpioDataRegs.GPADAT.bit.GPIO10);
+    if(current3pos == 2 ){ //change to high position
+        if(previous3pos != 2){
+            GpioDataRegs.GPASET.bit.GPIO13 = 1; //enable inverter
+        }
+    } else {
+        GpioDataRegs.GPACLEAR.bit.GPIO13 = 1; //disable inverter
+    }
+    previous3pos = current3pos;
+
+
 
    // Clear INT flag for this timer
    EPwm1Regs.ETCLR.bit.INT = 1;
