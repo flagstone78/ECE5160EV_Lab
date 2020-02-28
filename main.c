@@ -5,10 +5,6 @@
 #include "controller.h"
 #include "speed.h"
 
-// Configure the period for each timer
-#define EPWM_TIMER_TBPRD  900 // Period register
-#define EPWM_CMP          225
-
 
 // Prototype statements for functions found within this file.
 //#pragma CODE_SECTION(epwm1_isr, "ramfuncs");
@@ -99,7 +95,7 @@ void InitEPwm50khz(void)
    // Setup TBCLK
 
     EPwm1Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up/down
-    EPwm1Regs.TBPRD = EPWM_TIMER_TBPRD;       // Set timer period
+    EPwm1Regs.TBPRD = MAX_PWM;       // Set timer period
     EPwm1Regs.TBCTL.bit.PHSEN = TB_DISABLE;    // Disable phase loading
     EPwm1Regs.TBPHS.half.TBPHS = 0x0000;       // Phase is 0
     EPwm1Regs.TBCTR = 0x0000;                  // Clear counter
@@ -116,7 +112,7 @@ void InitEPwm50khz(void)
 
     // Set Compare values
     EPwm1Regs.CMPA.half.CMPA = 0;    // Set compare A value
-    EPwm1Regs.CMPB = EPWM_TIMER_TBPRD;              // Set Compare B value
+    EPwm1Regs.CMPB = MAX_PWM;              // Set Compare B value
 
     // Set actions (active low)
     EPwm1Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on Zero         Swap these?
@@ -127,7 +123,7 @@ void InitEPwm50khz(void)
 
     // Setup TBCLK
     EPwm2Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up/down
-    EPwm2Regs.TBPRD = EPWM_TIMER_TBPRD;       // Set timer period
+    EPwm2Regs.TBPRD = MAX_PWM;       // Set timer period
     EPwm2Regs.TBCTL.bit.PHSEN = TB_DISABLE;    // Disable phase loading
     EPwm2Regs.TBPHS.half.TBPHS = 0x0000;       // Phase is 0
     EPwm2Regs.TBCTR = 0x0000;                  // Clear counter
@@ -144,7 +140,7 @@ void InitEPwm50khz(void)
 
    // Set Compare values
     EPwm2Regs.CMPA.half.CMPA = 0;    // Set compare A value
-    EPwm2Regs.CMPB = EPWM_TIMER_TBPRD;              // Set Compare B value
+    EPwm2Regs.CMPB = MAX_PWM;              // Set Compare B value
 
     // Set actions (active low)
     EPwm2Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on Zero         Swap these?
@@ -155,7 +151,7 @@ void InitEPwm50khz(void)
 
     // Setup TBCLK
     EPwm3Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up
-    EPwm3Regs.TBPRD = EPWM_TIMER_TBPRD;       // Set timer period
+    EPwm3Regs.TBPRD = MAX_PWM;       // Set timer period
     EPwm3Regs.TBCTL.bit.PHSEN = TB_DISABLE;    // Disable phase loading
     EPwm3Regs.TBPHS.half.TBPHS = 0x0000;       // Phase is 0
     EPwm3Regs.TBCTR = 0x0000;                  // Clear counter
@@ -172,7 +168,7 @@ void InitEPwm50khz(void)
 
    // Set Compare values
     EPwm3Regs.CMPA.half.CMPA = 0;    // Set compare A value
-    EPwm3Regs.CMPB = EPWM_TIMER_TBPRD;              // Set Compare B value
+    EPwm3Regs.CMPB = MAX_PWM;              // Set Compare B value
 
     // Set actions (active low)
     EPwm3Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on Zero         Swap these?
@@ -278,7 +274,7 @@ void main(void)
       IER |= M_INT12;                              // Enable CPU INT1
 
       EINT;                                       // Enable Global Interrupts
-      ERTM;   // Enable Global realtime interrupt DBGM
+      ERTM;   // Enable Global real time interrupt DBGM
 
      EDIS;
 
@@ -355,64 +351,80 @@ interrupt void epwm1_isr(void)
     //calculate next pwm cmp vals
 
     //lowpass for filtered speed; 0.0150341144 m/hall transition
-    filteredSpeed = 0.999*filteredSpeed + 0.001*(50000.0*(double)HallCount*0.0150341144);
+    filteredSpeed = 0.999*filteredSpeed + 0.001*((50000.0/3)*(double)HallCount*0.0150341144);
     HallCount=0;
 
-    Uint16 max_pwm=EPWM_TIMER_TBPRD;
-    double dFromController = controller(ThrottleSetPoint,filteredSpeed,PeakCurrent);//power;
-    ptest = (double)max_pwm*dFromController;
-    Uint16 p = ptest;
-    if(p > max_pwm){
-        p = max_pwm;
-    }
+
 
     //Uint16 p_inv = max_pwm - p;
     Uint16 state=(ha<<2)|(hb<<1)|(hc);
+
+
+
+    Uint16 p = 0;
+
+    double ctest=0;
+    if((cur_A >= cur_B) && (cur_A >= cur_C)){
+        ctest = cur_A;
+    } else if((cur_B >= cur_A) && (cur_B >= cur_C)){
+        ctest = cur_B;
+    } else {
+        ctest = cur_C;
+    }
+
+    /*p = controllerToPWM(ThrottleSetPoint,filteredSpeed, ctest);*/
+
     //if(PeakCurrent > i_0){state = 0;} //freewheel
     switch(state){
     case 1: //Test verified
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_C);
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = max_pwm; //AL
+         EPwm1Regs.CMPB              = MAX_PWM; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH          //high
          EPwm2Regs.CMPB              = 0; //BL
          EPwm3Regs.CMPA.half.CMPA    = p;//CH
          EPwm3Regs.CMPB              = p; //CL
          break;
     case 2:
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_B);
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
          EPwm1Regs.CMPB              = 0; //AL
          EPwm2Regs.CMPA.half.CMPA    = p; //BH
          EPwm2Regs.CMPB              = p; //BL
          EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = max_pwm; //CL
+         EPwm3Regs.CMPB              = MAX_PWM; //CL
          break;
     case 3:
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_C);
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
          EPwm1Regs.CMPB              = 0; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH
-         EPwm2Regs.CMPB              = max_pwm; //BL
+         EPwm2Regs.CMPB              = MAX_PWM; //BL
          EPwm3Regs.CMPA.half.CMPA    = p;//CH
          EPwm3Regs.CMPB              = p; //CL
             break;
     case 4:
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_A);
          EPwm1Regs.CMPA.half.CMPA    = p; //AH
          EPwm1Regs.CMPB              = p; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH
-         EPwm2Regs.CMPB              = max_pwm; //BL
+         EPwm2Regs.CMPB              = MAX_PWM; //BL
          EPwm3Regs.CMPA.half.CMPA    = 0;//CH
          EPwm3Regs.CMPB              = 0; //CL
             break;
     case 5:
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_A);
          EPwm1Regs.CMPA.half.CMPA    = p; //AH
          EPwm1Regs.CMPB              = p; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH
          EPwm2Regs.CMPB              = 0; //BL
          EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = max_pwm; //CL
+         EPwm3Regs.CMPB              = MAX_PWM; //CL
             break;
     case 6:
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_B);
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = max_pwm; //AL
+         EPwm1Regs.CMPB              = MAX_PWM; //AL
          EPwm2Regs.CMPA.half.CMPA    = p; //BH
          EPwm2Regs.CMPB              = p; //BL
          EPwm3Regs.CMPA.half.CMPA    = 0;//CH
@@ -420,11 +432,11 @@ interrupt void epwm1_isr(void)
             break;
     default:  //freewheel
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = max_pwm; //AL
+         EPwm1Regs.CMPB              = MAX_PWM; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH
-         EPwm2Regs.CMPB              = max_pwm; //BL
+         EPwm2Regs.CMPB              = MAX_PWM; //BL
          EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = max_pwm; //CL
+         EPwm3Regs.CMPB              = MAX_PWM; //CL
     }
 
     //three position switch

@@ -45,3 +45,14 @@ double controller(double velRef, double vel, double cur){
     return currentController(cur, i_0);
 
 }
+
+Uint16 controllerToPWM( double ThrottleSetPoint, double filteredSpeed, double PhaseCurrent){
+    double dFromController = controller(ThrottleSetPoint,filteredSpeed,PhaseCurrent);//power;
+    ptest = MAX_PWM*dFromController;
+    Uint16 p = ptest;
+    if(p > MAX_PWM){
+        p = MAX_PWM;
+    }
+
+    return p;
+}

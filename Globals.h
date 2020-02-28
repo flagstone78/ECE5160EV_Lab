@@ -1,6 +1,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#define MAX_PWM  900 // Period register
+
 
 //Controller.h
 double d_0 = 0; //duty cycle d[k]
@@ -30,7 +32,7 @@ void setGlobals(){
     ravg = 0.2435;        //ohms
     lavg = 0.000356;      //h
     Vdc  =26.0;            //volts
-    wc = (2.0*3.1415927*1000.0); //cross over fq rad/sec
+    wc = (2.0*3.1415927*500.0); //cross over fq rad/sec
 
 
     Kpi = ((2.0*wc*lavg)/Vdc); //0.172076
@@ -40,7 +42,7 @@ void setGlobals(){
 
 
     //voltage controller variables
-    wc2 =   (2.0*3.1415927*0.01);              //rad/sec
+    wc2 =   (2.0*3.1415927*10000);              //rad/sec
     Gphy0 = 1.0/(1.0*1.204*10.0*0.447*0.3302);//0.7038;  // 1/(Cd*rho*Av*V0*mphtoms*rw)
     wphy  = (1.0*1.204*10.0*0.447)/Mv;    //Cd*rho*Av*v0/Mv   Cd = 1, Av=0.4; Cr=0.01; rho =1.204    //rad/sec
     wz2   =(wc2/10.0);
@@ -50,6 +52,11 @@ void setGlobals(){
 
     iConst = (((Kiv*T)/2) + Kpv);
     iConst1= (((Kiv*T)/2) - Kpv);
+
+    i_0 = 0;
+    i_1 = 0;
+    ve = 0;
+    ve_1 = 0;
 }
 
 //speed.h
@@ -61,6 +68,8 @@ volatile unsigned int HallCount = 0;
 
 //set in the ADC isr and read elswhere
 volatile double ThrottleSetPoint = 0;     //A
-volatile double PeakCurrent = 0;          //A
+volatile double cur_A = 0;          //A
+volatile double cur_B = 0;          //A
+volatile double cur_C = 0;          //A
 
 #endif

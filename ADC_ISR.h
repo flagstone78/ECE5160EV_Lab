@@ -34,22 +34,14 @@ interrupt void  adc_isr(void)
     ThrottleSetPoint = t; //set global
 
     //double c = (double)(AdcResult.ADCRESULT1 - CURRENT_OFFSET)/CURRENT_SCALE;
-    double curAdcVal = AdcResult.ADCRESULT1;
-    double c;
-    if(curAdcVal < 1793){ //less than 1 amp
-        c =  -0.0002214609511*curAdcVal*curAdcVal + 0.80599694921*curAdcVal - 732.39954476; //polynomial
-    }else{
-        c = 0.012473509071*curAdcVal - 21.465325397; //linear
-    }
-
-    if(c < 0.0){c *= -1;}
-
-    PeakCurrent = c;
+    cur_C = 0.8*cur_C + 0.2*((double)AdcResult.ADCRESULT1*0.0125594816611205 - 25.6374436368839);
+    cur_B = 0.8*cur_B + 0.2*((double)AdcResult.ADCRESULT2*0.0127595032704522 - 26.179514645938);
+    cur_A = 0.8*cur_A + 0.2*((double)AdcResult.ADCRESULT3*0.012099995393 - 24.815123238);
 
     //Current = AdcResult.ADCRESULT1;
-    if (PeakCurrent >= MAX_ADC_CURRENT){
+    if ((abs(cur_A) >= MAX_ADC_CURRENT) || (abs(cur_B) >= MAX_ADC_CURRENT) || (abs(cur_C) >= MAX_ADC_CURRENT)){
       GpioDataRegs.GPACLEAR.bit.GPIO13 = 1;  //Disable gate driver
-      trip=PeakCurrent;
+      trip=1;
     }
 
     AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;     //Clear ADCINT1 flag reinitialize for next SOC
@@ -64,26 +56,57 @@ void configureADC(){
     InitAdcAio();
 
     //AdcChanSelect(7);
-
-    // ADC Configuration for Temp Sensor
     EALLOW;
+    AdcRegs.ADCINTSOCSEL1.bit.SOC0  = 0;    //ADCINT2 starts SOC0-7
+    AdcRegs.ADCINTSOCSEL1.bit.SOC1  = 0;
+    AdcRegs.ADCINTSOCSEL1.bit.SOC2  = 0;
+    AdcRegs.ADCINTSOCSEL1.bit.SOC3  = 0;
+    AdcRegs.ADCINTSOCSEL1.bit.SOC4  = 0;
+    AdcRegs.ADCINTSOCSEL1.bit.SOC5  = 0;
+    AdcRegs.ADCINTSOCSEL1.bit.SOC6  = 0;
+    AdcRegs.ADCINTSOCSEL1.bit.SOC7  = 0;
+    AdcRegs.ADCINTSOCSEL2.bit.SOC8  = 0;    //ADCINT1 starts SOC8-15
+    AdcRegs.ADCINTSOCSEL2.bit.SOC9  = 0;
+    AdcRegs.ADCINTSOCSEL2.bit.SOC10 = 0;
+    AdcRegs.ADCINTSOCSEL2.bit.SOC11 = 0;
+    AdcRegs.ADCINTSOCSEL2.bit.SOC12 = 0;
+    AdcRegs.ADCINTSOCSEL2.bit.SOC13 = 0;
+    AdcRegs.ADCINTSOCSEL2.bit.SOC14 = 0;
+    AdcRegs.ADCINTSOCSEL2.bit.SOC15 = 0;
+
+
     AdcRegs.ADCCTL2.bit.ADCNONOVERLAP = 1;  //Enable non-overlap mode
     AdcRegs.ADCCTL1.bit.INTPULSEPOS = 1;    //ADCINT1 trips after AdcResults latch
-    AdcRegs.INTSEL1N2.bit.INT1E     = 1;    //Enabled ADCINT1
+
+    AdcRegs.INTSEL1N2.bit.INT1E     = 1;    //enable ADCINT1
     AdcRegs.INTSEL1N2.bit.INT1CONT  = 0;    //Disable ADCINT1 Continuous mode
-    AdcRegs.INTSEL1N2.bit.INT1SEL   = 0;    //setup EOC0 to trigger ADCINT1 to fire
+    AdcRegs.INTSEL1N2.bit.INT1SEL   = 2;    //setup EOC0 to trigger ADCINT1 to fire
+
+    //AdcRegs.INTSEL3N4.bit.INT3E     = 1;    //Enabled ADCINT1
+    //AdcRegs.INTSEL3N4.bit.INT3CONT  = 0;    //Disable ADCINT1 Continuous mode
+    //AdcRegs.INTSEL3N4.bit.INT3SEL   = 2;    //setup EOC2 to trigger ADCINT1 to fire
 
     //simultaneous conversion SIMULENx = 1
     AdcRegs.ADCSAMPLEMODE.bit.SIMULEN0 = 1;
+    AdcRegs.ADCSAMPLEMODE.bit.SIMULEN2 = 1;
 
-    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINA7 for throttle
+    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINA7 for       throttle
     AdcRegs.ADCSOC0CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
     AdcRegs.ADCSOC0CTL.bit.ACQPS    = 25;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
 
-    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINA5 (which is internally connected to the temperature sensor)
-    AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
-    AdcRegs.ADCSOC1CTL.bit.ACQPS    = 25;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
 
+    //AdcRegs.ADCSOC1CTL.bit.CHSEL    = 7;    //set SOC0 channel select to ADCINB7            Current phase c
+    //AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
+    //AdcRegs.ADCSOC1CTL.bit.ACQPS    = 25;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
+
+    AdcRegs.ADCSOC2CTL.bit.CHSEL    = 5;    //set SOC1 channel select to ADCINA5           Current phase B
+    AdcRegs.ADCSOC2CTL.bit.TRIGSEL  = 5;    //set SOC1 start trigger on EPWM1A
+    AdcRegs.ADCSOC2CTL.bit.ACQPS    = 25;   //set SOC1 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
+/*
+    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 5;    //set SOC1 channel select to ADCINB5           Current phase A
+    AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;    //set SOC1 start trigger on EPWM1A
+    AdcRegs.ADCSOC1CTL.bit.ACQPS    = 25;   //set SOC1 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
+*/
     EDIS;
 
     //start adc
