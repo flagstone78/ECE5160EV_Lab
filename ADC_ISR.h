@@ -34,9 +34,9 @@ interrupt void  adc_isr(void)
     ThrottleSetPoint = t; //set global
 
     //double c = (double)(AdcResult.ADCRESULT1 - CURRENT_OFFSET)/CURRENT_SCALE;
-    cur_C = 0.8*cur_C + 0.2*((double)AdcResult.ADCRESULT1*0.0125594816611205 - 25.6374436368839);
-    cur_B = 0.8*cur_B + 0.2*((double)AdcResult.ADCRESULT2*0.0127595032704522 - 26.179514645938);
-    cur_A = 0.8*cur_A + 0.2*((double)AdcResult.ADCRESULT3*0.012099995393 - 24.815123238);
+    cur_C = ((double)AdcResult.ADCRESULT1*0.0125594816611205 - 25.8074436368839);
+    cur_B = ((double)AdcResult.ADCRESULT2*0.0127595032704522 - 26.379514645938);
+    cur_A = ((double)AdcResult.ADCRESULT3*0.012099995393 - 24.935123238);
 
     //Current = AdcResult.ADCRESULT1;
     if ((abs(cur_A) >= MAX_ADC_CURRENT) || (abs(cur_B) >= MAX_ADC_CURRENT) || (abs(cur_C) >= MAX_ADC_CURRENT)){
@@ -57,6 +57,7 @@ void configureADC(){
 
     //AdcChanSelect(7);
     EALLOW;
+    //turn off all adc triggers
     AdcRegs.ADCINTSOCSEL1.bit.SOC0  = 0;    //ADCINT2 starts SOC0-7
     AdcRegs.ADCINTSOCSEL1.bit.SOC1  = 0;
     AdcRegs.ADCINTSOCSEL1.bit.SOC2  = 0;
@@ -80,11 +81,8 @@ void configureADC(){
 
     AdcRegs.INTSEL1N2.bit.INT1E     = 1;    //enable ADCINT1
     AdcRegs.INTSEL1N2.bit.INT1CONT  = 0;    //Disable ADCINT1 Continuous mode
-    AdcRegs.INTSEL1N2.bit.INT1SEL   = 2;    //setup EOC0 to trigger ADCINT1 to fire
+    AdcRegs.INTSEL1N2.bit.INT1SEL   = 3;    //setup EOC0 to trigger ADCINT1 to fire
 
-    //AdcRegs.INTSEL3N4.bit.INT3E     = 1;    //Enabled ADCINT1
-    //AdcRegs.INTSEL3N4.bit.INT3CONT  = 0;    //Disable ADCINT1 Continuous mode
-    //AdcRegs.INTSEL3N4.bit.INT3SEL   = 2;    //setup EOC2 to trigger ADCINT1 to fire
 
     //simultaneous conversion SIMULENx = 1
     AdcRegs.ADCSAMPLEMODE.bit.SIMULEN0 = 1;
@@ -99,9 +97,9 @@ void configureADC(){
     //AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
     //AdcRegs.ADCSOC1CTL.bit.ACQPS    = 25;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
 
-    AdcRegs.ADCSOC2CTL.bit.CHSEL    = 5;    //set SOC1 channel select to ADCINA5           Current phase B
-    AdcRegs.ADCSOC2CTL.bit.TRIGSEL  = 5;    //set SOC1 start trigger on EPWM1A
-    AdcRegs.ADCSOC2CTL.bit.ACQPS    = 25;   //set SOC1 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
+    AdcRegs.ADCSOC2CTL.bit.CHSEL    = 5;    //set SOC2 channel select to ADCINA5           Current phase B
+    AdcRegs.ADCSOC2CTL.bit.TRIGSEL  = 5;    //set SOC2 start trigger on EPWM1A
+    AdcRegs.ADCSOC2CTL.bit.ACQPS    = 25;   //set SOC2 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
 /*
     AdcRegs.ADCSOC1CTL.bit.CHSEL    = 5;    //set SOC1 channel select to ADCINB5           Current phase A
     AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;    //set SOC1 start trigger on EPWM1A

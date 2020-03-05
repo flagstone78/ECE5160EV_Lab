@@ -351,7 +351,7 @@ interrupt void epwm1_isr(void)
     //calculate next pwm cmp vals
 
     //lowpass for filtered speed; 0.0150341144 m/hall transition
-    filteredSpeed = 0.999*filteredSpeed + 0.001*((50000.0/3)*(double)HallCount*0.0150341144);
+    filteredSpeed = 0.99*filteredSpeed + 0.01*((50000.0/3)*(double)HallCount*0.0150341144);
     HallCount=0;
 
 
@@ -377,7 +377,7 @@ interrupt void epwm1_isr(void)
     //if(PeakCurrent > i_0){state = 0;} //freewheel
     switch(state){
     case 1: //Test verified
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_C);
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_B); //cur_C
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
          EPwm1Regs.CMPB              = MAX_PWM; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH          //high
@@ -386,7 +386,7 @@ interrupt void epwm1_isr(void)
          EPwm3Regs.CMPB              = p; //CL
          break;
     case 2:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_B);
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_A); //curB
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
          EPwm1Regs.CMPB              = 0; //AL
          EPwm2Regs.CMPA.half.CMPA    = p; //BH
@@ -395,7 +395,7 @@ interrupt void epwm1_isr(void)
          EPwm3Regs.CMPB              = MAX_PWM; //CL
          break;
     case 3:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_C);
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_A); //-curA
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
          EPwm1Regs.CMPB              = 0; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH
@@ -404,7 +404,7 @@ interrupt void epwm1_isr(void)
          EPwm3Regs.CMPB              = p; //CL
             break;
     case 4:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_A);
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_C); //curA
          EPwm1Regs.CMPA.half.CMPA    = p; //AH
          EPwm1Regs.CMPB              = p; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH
@@ -413,7 +413,7 @@ interrupt void epwm1_isr(void)
          EPwm3Regs.CMPB              = 0; //CL
             break;
     case 5:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_A);
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_B); //-curB
          EPwm1Regs.CMPA.half.CMPA    = p; //AH
          EPwm1Regs.CMPB              = p; //AL
          EPwm2Regs.CMPA.half.CMPA    = 0; //BH
@@ -422,7 +422,7 @@ interrupt void epwm1_isr(void)
          EPwm3Regs.CMPB              = MAX_PWM; //CL
             break;
     case 6:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,cur_B);
+         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_C); //-curC
          EPwm1Regs.CMPA.half.CMPA    = 0; //AH
          EPwm1Regs.CMPB              = MAX_PWM; //AL
          EPwm2Regs.CMPA.half.CMPA    = p; //BH
