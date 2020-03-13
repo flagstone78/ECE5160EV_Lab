@@ -2,7 +2,7 @@
 #include "DSP28x_Project.h"     // Device Headerfile and Examples Include File
 #include <stdbool.h>
 #include "ADC_ISR.h"
-#include "controller.h"
+//#include "controller.h"
 #include "speed.h"
 
 
@@ -18,8 +18,8 @@ interrupt void HallB_isr(void);
 interrupt void HallC_isr(void);
 
 
-//global vars for inputs
-volatile unsigned int previous3pos=0;
+
+
 Uint32 delay = 0; //for blinking led
 
 
@@ -90,7 +90,7 @@ void InitEPwm50khz(void)
 
     EALLOW;
     SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 0;
-    EDIS;
+
 
    // Setup TBCLK
 
@@ -105,21 +105,21 @@ void InitEPwm50khz(void)
     EPwm1Regs.TBCTL.bit.PRDLD = TB_SHADOW;
 
     // Setup shadow register load on ZERO
-    EPwm1Regs.CMPCTL.bit.SHDWAMODE = CC_SHADOW;
-    EPwm1Regs.CMPCTL.bit.SHDWBMODE = CC_SHADOW;
-    EPwm1Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
-    EPwm1Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+    EPwm1Regs.CMPCTL.bit.SHDWAMODE = CC_IMMEDIATE;
+    EPwm1Regs.CMPCTL.bit.SHDWBMODE = CC_IMMEDIATE;
+    //EPwm1Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+    //EPwm1Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
     // Set Compare values
     EPwm1Regs.CMPA.half.CMPA = 0;    // Set compare A value
     EPwm1Regs.CMPB = MAX_PWM;              // Set Compare B value
 
     // Set actions (active low)
-    EPwm1Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on Zero         Swap these?
-    EPwm1Regs.AQCTLA.bit.CAU = AQ_SET;            // Set PWM1A on event A, up count
+    EPwm1Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on event down count
+    EPwm1Regs.AQCTLA.bit.CAU = AQ_SET;            // Set PWM1A on up count
 
-    EPwm1Regs.AQCTLB.bit.CBD = AQ_SET;            // Clear PWM1B on Zero
-    EPwm1Regs.AQCTLB.bit.CBU = AQ_CLEAR;          // Set PWM1B on event B, up count
+    EPwm1Regs.AQCTLB.bit.CBD = AQ_SET;            // Set PWM1B on on down count
+    EPwm1Regs.AQCTLB.bit.CBU = AQ_CLEAR;          // Clear PWM1B on up count
 
     // Setup TBCLK
     EPwm2Regs.TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN; // Count up/down
@@ -133,10 +133,10 @@ void InitEPwm50khz(void)
     EPwm2Regs.TBCTL.bit.PRDLD = TB_SHADOW;
 
    // Setup shadow register load on ZERO
-    EPwm2Regs.CMPCTL.bit.SHDWAMODE = CC_SHADOW;
-    EPwm2Regs.CMPCTL.bit.SHDWBMODE = CC_SHADOW;
-    EPwm2Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
-    EPwm2Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+    EPwm2Regs.CMPCTL.bit.SHDWAMODE = CC_IMMEDIATE;
+    EPwm2Regs.CMPCTL.bit.SHDWBMODE = CC_IMMEDIATE;
+    //EPwm2Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+    //EPwm2Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
    // Set Compare values
     EPwm2Regs.CMPA.half.CMPA = 0;    // Set compare A value
@@ -161,17 +161,17 @@ void InitEPwm50khz(void)
     EPwm3Regs.TBCTL.bit.PRDLD = TB_SHADOW;
 
    // Setup shadow register load on ZERO
-    EPwm3Regs.CMPCTL.bit.SHDWAMODE = CC_SHADOW;
-    EPwm3Regs.CMPCTL.bit.SHDWBMODE = CC_SHADOW;
-    EPwm3Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
-    EPwm3Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+    EPwm3Regs.CMPCTL.bit.SHDWAMODE = CC_IMMEDIATE;
+    EPwm3Regs.CMPCTL.bit.SHDWBMODE = CC_IMMEDIATE;
+    //EPwm3Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+    //EPwm3Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
    // Set Compare values
     EPwm3Regs.CMPA.half.CMPA = 0;    // Set compare A value
     EPwm3Regs.CMPB = MAX_PWM;              // Set Compare B value
 
     // Set actions (active low)
-    EPwm3Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on Zero         Swap these?
+    EPwm3Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on event down         Swap these?
     EPwm3Regs.AQCTLA.bit.CAU = AQ_SET;            // Set PWM1A on event A, up count
 
     EPwm3Regs.AQCTLB.bit.CBD = AQ_SET;            // Clear PWM1B on Zero
@@ -179,9 +179,9 @@ void InitEPwm50khz(void)
 
 
     //PWM interrupt
-    EPwm1Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO;     // Select INT on Zero event
-    EPwm1Regs.ETSEL.bit.INTEN = 1;                // Enable INT
-    EPwm1Regs.ETPS.bit.INTPRD = ET_3RD;           // Generate INT on 3rd event
+    //EPwm1Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO;     // Select INT on Zero event
+    //EPwm1Regs.ETSEL.bit.INTEN = 1;                // Enable INT
+    //EPwm1Regs.ETPS.bit.INTPRD = ET_1ST;//ET_3RD;           // Generate INT on 3rd event
 
     //Trigger ADC from PWM
     EPwm1Regs.ETSEL.bit.SOCAEN  = 1;        // Enable SOC on A group
@@ -189,7 +189,7 @@ void InitEPwm50khz(void)
     EPwm1Regs.ETPS.bit.SOCAPRD   = 1;        // Generate pulse on 1st event
 
 
-    EALLOW;
+
     SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;
     EDIS;
 }
@@ -240,10 +240,10 @@ void main(void)
 
    //GPIO interrupts -----------------------------
    //set interrupt handle in table
-   PieVectTable.XINT1 = &HallA_isr;
-   PieVectTable.XINT2 = &HallB_isr;
-   PieVectTable.XINT3 = &HallC_isr;
-   PieVectTable.EPWM1_INT = &epwm1_isr;
+   //PieVectTable.XINT1 = &HallA_isr;
+   //PieVectTable.XINT2 = &HallB_isr;
+   //PieVectTable.XINT3 = &HallC_isr;
+   //PieVectTable.EPWM1_INT = &epwm1_isr;
    PieVectTable.ADCINT1 = &adc_isr;
 
    //set interrupt pin
@@ -256,22 +256,22 @@ void main(void)
      //Group 1
 
       //Hall A
-      PieCtrlRegs.PIEIER1.bit.INTx4 = 1;          // Enable PIE Group 1 INT4
+      //PieCtrlRegs.PIEIER1.bit.INTx4 = 1;          // Enable PIE Group 1 INT4
       //Hall B
-      PieCtrlRegs.PIEIER1.bit.INTx5 = 1;          // Enable PIE Group 1 INT5
+      //PieCtrlRegs.PIEIER1.bit.INTx5 = 1;          // Enable PIE Group 1 INT5
       //ADC
       PieCtrlRegs.PIEIER1.bit.INTx1 = 1;          // ADC Enable INT 1.1 in the PIE
       IER |= M_INT1;                              // Enable CPU INT1
 
       //Group 3
       //PWM
-      PieCtrlRegs.PIEIER3.bit.INTx1 = 1;            //pwm 1
-      IER |= M_INT3;                                //enable pwm interrupt
+      //PieCtrlRegs.PIEIER3.bit.INTx1 = 1;            //pwm 1
+      //IER |= M_INT3;                                //enable pwm interrupt
 
       //Group 12
       //Hall C
-      PieCtrlRegs.PIEIER12.bit.INTx1 = 1;          // Enable PIE Group 12 INT1
-      IER |= M_INT12;                              // Enable CPU INT1
+      //PieCtrlRegs.PIEIER12.bit.INTx1 = 1;          // Enable PIE Group 12 INT1
+      //IER |= M_INT12;                              // Enable CPU INT1
 
       EINT;                                       // Enable Global Interrupts
       ERTM;   // Enable Global real time interrupt DBGM
@@ -310,11 +310,32 @@ void main(void)
 
    for(;;)
    {
-       while(delay>0){
-           delay--;
+       //current check
+       if ((abs(cur_A) >= MAX_ADC_CURRENT) || (abs(cur_B) >= MAX_ADC_CURRENT) || (abs(cur_C) >= MAX_ADC_CURRENT)){
+         GpioDataRegs.GPACLEAR.bit.GPIO13 = 1;  //Disable gate driver
+         trip_A=cur_A;
+         trip_B=cur_B;
+         trip_C=cur_C;
        }
-       delay = 300000; //about 1 per second
+
+       //read hall sensors
+       bool ha = GpioDataRegs.GPADAT.bit.GPIO6;
+       bool hb = GpioDataRegs.GPADAT.bit.GPIO7;
+       bool hc = GpioDataRegs.GPADAT.bit.GPIO8;
+       state=(ha<<2)|(hb<<1)|(hc);
+
        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
+
+       //three position switch
+       unsigned int current3pos = (GpioDataRegs.GPADAT.bit.GPIO9<<1) | (GpioDataRegs.GPADAT.bit.GPIO10);
+       if(current3pos == 2 ){ //change to high position
+           if(previous3pos != 2){
+               GpioDataRegs.GPASET.bit.GPIO13 = 1; //enable inverter
+           }
+       } else {
+           GpioDataRegs.GPACLEAR.bit.GPIO13 = 1; //disable inverter
+       }
+       previous3pos = current3pos;
    }
 
 }
@@ -341,123 +362,15 @@ interrupt void HallC_isr(void){
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP12;
 }
 
-interrupt void epwm1_isr(void)
+/*interrupt void epwm1_isr(void)
 {
-    //read hall sensors
-    bool ha = GpioDataRegs.GPADAT.bit.GPIO6;
-    bool hb = GpioDataRegs.GPADAT.bit.GPIO7;
-    bool hc = GpioDataRegs.GPADAT.bit.GPIO8;
-
-    //calculate next pwm cmp vals
-
-    //lowpass for filtered speed; 0.0150341144 m/hall transition
-    filteredSpeed = 0.99*filteredSpeed + 0.01*((50000.0/3)*(double)HallCount*0.0150341144);
-    HallCount=0;
-
-
-
-    //Uint16 p_inv = max_pwm - p;
-    Uint16 state=(ha<<2)|(hb<<1)|(hc);
-
-
-
-    Uint16 p = 0;
-
-    double ctest=0;
-    if((cur_A >= cur_B) && (cur_A >= cur_C)){
-        ctest = cur_A;
-    } else if((cur_B >= cur_A) && (cur_B >= cur_C)){
-        ctest = cur_B;
-    } else {
-        ctest = cur_C;
-    }
-
-    /*p = controllerToPWM(ThrottleSetPoint,filteredSpeed, ctest);*/
-
-    //if(PeakCurrent > i_0){state = 0;} //freewheel
-    switch(state){
-    case 1: //Test verified
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_B); //cur_C
-         EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = MAX_PWM; //AL
-         EPwm2Regs.CMPA.half.CMPA    = 0; //BH          //high
-         EPwm2Regs.CMPB              = 0; //BL
-         EPwm3Regs.CMPA.half.CMPA    = p;//CH
-         EPwm3Regs.CMPB              = p; //CL
-         break;
-    case 2:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_A); //curB
-         EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = 0; //AL
-         EPwm2Regs.CMPA.half.CMPA    = p; //BH
-         EPwm2Regs.CMPB              = p; //BL
-         EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = MAX_PWM; //CL
-         break;
-    case 3:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_A); //-curA
-         EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = 0; //AL
-         EPwm2Regs.CMPA.half.CMPA    = 0; //BH
-         EPwm2Regs.CMPB              = MAX_PWM; //BL
-         EPwm3Regs.CMPA.half.CMPA    = p;//CH
-         EPwm3Regs.CMPB              = p; //CL
-            break;
-    case 4:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_C); //curA
-         EPwm1Regs.CMPA.half.CMPA    = p; //AH
-         EPwm1Regs.CMPB              = p; //AL
-         EPwm2Regs.CMPA.half.CMPA    = 0; //BH
-         EPwm2Regs.CMPB              = MAX_PWM; //BL
-         EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = 0; //CL
-            break;
-    case 5:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_B); //-curB
-         EPwm1Regs.CMPA.half.CMPA    = p; //AH
-         EPwm1Regs.CMPB              = p; //AL
-         EPwm2Regs.CMPA.half.CMPA    = 0; //BH
-         EPwm2Regs.CMPB              = 0; //BL
-         EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = MAX_PWM; //CL
-            break;
-    case 6:
-         p = controllerToPWM(ThrottleSetPoint,filteredSpeed,-cur_C); //-curC
-         EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = MAX_PWM; //AL
-         EPwm2Regs.CMPA.half.CMPA    = p; //BH
-         EPwm2Regs.CMPB              = p; //BL
-         EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = 0; //CL
-            break;
-    default:  //freewheel
-         EPwm1Regs.CMPA.half.CMPA    = 0; //AH
-         EPwm1Regs.CMPB              = MAX_PWM; //AL
-         EPwm2Regs.CMPA.half.CMPA    = 0; //BH
-         EPwm2Regs.CMPB              = MAX_PWM; //BL
-         EPwm3Regs.CMPA.half.CMPA    = 0;//CH
-         EPwm3Regs.CMPB              = MAX_PWM; //CL
-    }
-
-    //three position switch
-    unsigned int current3pos = (GpioDataRegs.GPADAT.bit.GPIO9<<1) | (GpioDataRegs.GPADAT.bit.GPIO10);
-    if(current3pos == 2 ){ //change to high position
-        if(previous3pos != 2){
-            GpioDataRegs.GPASET.bit.GPIO13 = 1; //enable inverter
-        }
-    } else {
-        GpioDataRegs.GPACLEAR.bit.GPIO13 = 1; //disable inverter
-    }
-    previous3pos = current3pos;
-
-
 
    // Clear INT flag for this timer
    EPwm1Regs.ETCLR.bit.INT = 1;
 
    // Acknowledge this interrupt to receive more interrupts from group 3
    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
-}
+}*/
 
 
 
