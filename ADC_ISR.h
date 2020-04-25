@@ -103,6 +103,7 @@ interrupt void  adc_isr(void)
          EPwm3Regs.CMPB              = MAX_PWM; //CL
     }
 
+    //calculate speed
     controllerTime = CpuTimer0Regs.TIM.all;
     controllerDeltaTime = controllerOldTime-controllerTime;
     prepareforNext();
@@ -127,7 +128,7 @@ interrupt void  adc_isr(void)
     //lowpass for filtered speed; 0.0150341144 m/hall transition
     //filteredSpeed = 0.99*filteredSpeed + 0.01*((50000.0)*(double)HallCount*0.0150341144);
     //HallCount=0;
-
+    //end calculate speed
 
     AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;     //Clear ADCINT1 flag reinitialize for next SOC
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;   // Acknowledge interrupt to PIE
