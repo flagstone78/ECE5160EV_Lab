@@ -9,7 +9,7 @@
 #define MAX_SPEED_MPH 10.0 //MPH
 #define MAX_SPEED_MPS MAX_SPEED_MPH*0.44704 // m/s
 
-#define MAX_ADC_CURRENT 15.0   //A //3000 //15 A   //2500 //10A        //2110 //5A    //
+#define MAX_ADC_CURRENT 19.0   //A //3000 //15 A   //2500 //10A        //2110 //5A    //
 #define CURRENT_OFFSET 1705.0  // adc count offset
 //Scaling is most likely off
 #define CURRENT_SCALE 81.5 //76.37806 //adc counts per amp
@@ -23,12 +23,12 @@ interrupt void  adc_isr(void)
     controllerOldTime = CpuTimer0Regs.TIM.all;
 
     //double c = (double)(AdcResult.ADCRESULT1 - CURRENT_OFFSET)/CURRENT_SCALE;
-    cur_C = ((double)AdcResult.ADCRESULT1*0.0125594816611205 - 25.4474436368839);
-    cur_B = ((double)AdcResult.ADCRESULT2*0.0091 - 18.43);
-    cur_A = ((double)AdcResult.ADCRESULT3*0.0126 - 25.5654); //t=34
+    cur_C = ((double)AdcResult.ADCRESULT1*0.0125594816611205 - 25.7474436368839);
+    cur_B = ((double)AdcResult.ADCRESULT2*0.0091 - 18.73);
+    cur_A = ((double)AdcResult.ADCRESULT3*0.0126 - 25.8654); //t=34
 
     //Throttle to velocity command
-    ThrottleSetPoint = 0.0013755076923077*((double)AdcResult.ADCRESULT0-760.0); // 0 to 10 mph   //t=44
+    //ThrottleSetPoint = 0.0013755076923077*((double)AdcResult.ADCRESULT0-760.0); // 0 to 10 mph   //t=44
 
     //if(PeakCurrent > i_0){state = 0;} //freewheel
     switch(state){
@@ -120,6 +120,10 @@ interrupt void  adc_isr(void)
         oldTime=time;
     }
     oldState=state;
+
+    //output speed
+    EPwm6Regs.CMPB = MAX_PWM*2.0*filteredSpeed/6.0;
+
     //lowpass for filtered speed; 0.0150341144 m/hall transition
     //filteredSpeed = 0.99*filteredSpeed + 0.01*((50000.0)*(double)HallCount*0.0150341144);
     //HallCount=0;

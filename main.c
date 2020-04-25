@@ -82,6 +82,10 @@ void configureGPIO(){
    GpioCtrlRegs.GPAMUX1.bit.GPIO4 = 1;   // Configure GPIO4 as EPWM3A
    GpioCtrlRegs.GPAMUX1.bit.GPIO5 = 1;   // Configure GPIO5 as EPWM3B
 
+
+  GpioCtrlRegs.GPAPUD.bit.GPIO11 = 1;    // Disable pull-up on GPIO11 (EPWM3B)
+  GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 1;   // Configure GPIO5 as EPWM3B
+
    EDIS;
 }
 
@@ -189,7 +193,35 @@ void InitEPwm50khz(void)
     EPwm1Regs.ETPS.bit.SOCAPRD   = 1;        // Generate pulse on 1st event
 
 
+    //output test
+    EPwm6Regs.TBCTL.bit.CTRMODE = TB_COUNT_UP; // Count up/down
+    EPwm6Regs.TBPRD = MAX_PWM*2;       // Set timer period
+    EPwm6Regs.TBCTL.bit.PHSEN = TB_DISABLE;    // Disable phase loading
+    EPwm6Regs.TBPHS.half.TBPHS = 0x0000;       // Phase is 0
+    EPwm6Regs.TBCTR = 0x0000;                  // Clear counter
+    EPwm6Regs.TBCTL.bit.HSPCLKDIV = TB_DIV1;   // Clock ratio to SYSCLKOUT
+    EPwm6Regs.TBCTL.bit.CLKDIV = TB_DIV1;
+    EPwm6Regs.TBCTL.bit.FREE_SOFT = 2; //free run on debug
+    EPwm6Regs.TBCTL.bit.PRDLD = TB_SHADOW;
 
+    // Setup shadow register load on ZERO
+    EPwm6Regs.CMPCTL.bit.SHDWAMODE = CC_SHADOW;
+    EPwm6Regs.CMPCTL.bit.SHDWBMODE = CC_SHADOW;
+    EPwm6Regs.CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+    EPwm6Regs.CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+
+    // Set Compare values
+    //EPwm6Regs.CMPA.half.CMPA = 0;    // Set compare A value
+    EPwm6Regs.CMPB = 0;              // Set Compare B value
+
+    // Set actions (active low)
+    //EPwm6Regs.AQCTLA.bit.CAD = AQ_CLEAR;           // Clear PWM1A on event down count
+    //EPwm6Regs.AQCTLA.bit.CAU = AQ_SET;            // Set PWM1A on up count
+
+    EPwm6Regs.AQCTLB.bit.ZRO = AQ_SET;            // Set PWM1B on on down count
+    EPwm6Regs.AQCTLB.bit.CBU = AQ_CLEAR;          // Clear PWM1B on up count
+
+    //enable clock
     SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;
     EDIS;
 }

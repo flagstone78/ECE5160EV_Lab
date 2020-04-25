@@ -34,8 +34,8 @@ double speedController(double velRef, double vel, double cur){
 
     ve = velRef - vel;
     i_0 = iConst*ve + iConst1*ve_1+i_1;//preCalcVel;
-    if (i_0 > 10){
-        i_0 = 10;
+    if (i_0 > 15){
+        i_0 = 15;
     } else if(i_0 < 0){
         i_0 = 0;
     }
